@@ -136,10 +136,10 @@ private AudioManager audioManager = null;
       int audioEncoder = getAudioEncoderFromString(recordingSettings.getString("AudioEncoding"));
       recorder.setAudioEncoder(audioEncoder);
       //recorder.setAudioEncoder(MediaRecorder.getAudioSourceMax());
-      recorder.setAudioSamplingRate(recordingSettings.getInt("SampleRate"));
+      //recorder.setAudioSamplingRate(recordingSettings.getInt("SampleRate"));
       recorder.setAudioChannels(recordingSettings.getInt("Channels"));
-      recorder.setAudioEncodingBitRate(recordingSettings.getInt("AudioEncodingBitRate"));
-      recorder.setAudioEncodingBitRate(32);
+      //recorder.setAudioEncodingBitRate(recordingSettings.getInt("AudioEncodingBitRate"));
+      recorder.setAudioEncodingBitRate(128000);
       recorder.setAudioSamplingRate(44100);
       recorder.setOutputFile(recordingPath);
     }

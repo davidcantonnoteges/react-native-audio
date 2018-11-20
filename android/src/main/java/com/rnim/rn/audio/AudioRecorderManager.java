@@ -20,6 +20,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.content.pm.PackageManager;
+import android.media.AudioDeviceInfo;
 import android.os.Build;
 import android.os.Environment;
 import android.media.MediaRecorder;
@@ -117,8 +118,17 @@ private AudioManager audioManager = null;
         if (audioManager != null) {
           audioManager.setMode(AudioManager.MODE_IN_CALL);
 
-          //audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-          //audioManager.startBluetoothSco();
+
+          audioManager.setWiredHeadsetOn(true);
+          if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+
+          }
+//audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+//audioManager.startBluetoothSco();
+
+          audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
+          audioManager.setStreamVolume(AudioManager.USE_DEFAULT_STREAM_TYPE,audioManager.getStreamMaxVolume(AudioManager.USE_DEFAULT_STREAM_TYPE), 0);
           audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL,audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL), 0);
         }
 

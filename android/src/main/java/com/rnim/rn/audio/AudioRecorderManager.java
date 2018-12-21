@@ -37,7 +37,7 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
 
   private static final String TAG = "ReactNativeAudio";
 
-
+  private LoadJNI vk;
   private Context context;
 
   private String currentOutputFile;
@@ -66,6 +66,49 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
             Manifest.permission.RECORD_AUDIO);
     boolean permissionGranted = permissionCheck == PackageManager.PERMISSION_GRANTED;
     promise.resolve(permissionGranted);
+  }
+
+  @ReactMethod
+  public void convertAudio(String path, final Promise promise)
+  {
+
+    final String origin = path;
+    final String destiny = path.replace(".wav", ".mp3");
+
+
+    new Thread(new Runnable(){
+      public void run() {
+
+        Log.d("INICIO CONVERSION", "SE HA INICIADO LA CONVERSION");
+        // do something here
+
+        if(vk == null)
+        {
+          vk = new LoadJNI();
+        }
+
+        try {
+          String workFolder = context.getFilesDir().getAbsolutePath();
+
+
+          String[] commandStr = {"ffmpeg", "-y", "-i", origin, "-ar", "44100", "-ac", "2", "-ab",  "64k", "-f",  "mp3", destiny};
+
+
+          vk.run(commandStr , workFolder , context);
+          Log.i("test", "ffmpeg4android finished successfully");
+
+          promise.resolve(destiny);
+
+
+        } catch (Throwable e) {
+          promise.resolve(origin);
+
+          Log.d("ERROR CONVERSION", e.getMessage());
+        }
+
+
+      }
+    }).start();
   }
 
   @ReactMethod
@@ -145,7 +188,7 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
 
       Log.i(TAG, "OFFHOOK");
 
-      wavAudioRecorder = new WavAudioRecorder(context, MediaRecorder.AudioSource.MIC, 11025, AudioFormat.CHANNEL_IN_MONO,
+      wavAudioRecorder = new WavAudioRecorder(context, MediaRecorder.AudioSource.MIC, 8000, AudioFormat.CHANNEL_IN_MONO,
               AudioFormat.ENCODING_PCM_16BIT, new WavAudioRecorder.ErrorListener() {
         @Override
         public void onError(Exception e) {
@@ -163,14 +206,15 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void stopRecording(Promise promise){
+  public void stopRecording(final Promise promise){
+
+
     if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M){
       if (!isRecording){
         logAndRejectPromise(promise, "INVALID_STATE", "Please call startRecording before stopping recording");
         return;
       }
 
-      stopTimer();
       isRecording = false;
       isPaused = false;
 
@@ -188,43 +232,11 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
         recorder = null;
       }
 
-      promise.resolve(currentOutputFile);
-
-      WritableMap result = Arguments.createMap();
-      result.putString("status", "OK");
-      result.putString("audioFileURL", "file://" + currentOutputFile);
-
-      String base64 = "";
-      if (includeBase64) {
-        try {
-          InputStream inputStream = new FileInputStream(currentOutputFile);
-          byte[] bytes;
-          byte[] buffer = new byte[8192];
-          int bytesRead;
-          ByteArrayOutputStream output = new ByteArrayOutputStream();
-          try {
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-              output.write(buffer, 0, bytesRead);
-            }
-          } catch (IOException e) {
-            Log.e(TAG, "FAILED TO PARSE FILE");
-          }
-          bytes = output.toByteArray();
-          base64 = Base64.encodeToString(bytes, Base64.DEFAULT);
-        } catch(FileNotFoundException e) {
-          Log.e(TAG, "FAILED TO FIND FILE");
-        }
-      }
-      result.putString("base64", base64);
-
-      sendEvent("recordingFinished", result);
     }else{
       if (!isRecording){
         logAndRejectPromise(promise, "INVALID_STATE", "Please call startRecording before stopping recording");
         return;
       }
-
-
 
       isRecording = false;
 
@@ -237,55 +249,15 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
         wavAudioRecorder = null;
       }
 
-
-      final String finalPath = currentOutputFile.replace(".wav", ".mp3");;
-
-
-
-      new Thread(new Runnable(){
-        public void run() {
-          // do something here
-
-          LoadJNI vk = new LoadJNI();
-          try {
-            String workFolder = context.getFilesDir().getAbsolutePath();
-
-
-            String[] commandStr = {"ffmpeg", "-y", "-i", currentOutputFile, "-ar", "44100", "-ac", "2", "-ab",  "64k", "-f",  "mp3", finalPath};
-
-
-            vk.run(commandStr , workFolder , context);
-            Log.i("test", "ffmpeg4android finished successfully");
-
-
-
-
-          } catch (Throwable e) {
-
-
-
-            Log.e("test", "vk run exception.", e);
-          }
-
-
-        }
-      }).start();
-
-
-
-
-
-      promise.resolve(finalPath);
-
-
-
-
-      WritableMap result = Arguments.createMap();
-      result.putString("status", "OK");
-      result.putString("audioFileURL", "file://" + finalPath);
-
-      sendEvent("recordingFinished", result);
     }
+
+    promise.resolve(currentOutputFile);
+    WritableMap result = Arguments.createMap();
+    result.putString("status", "OK");
+    result.putString("audioFileURL", "file://" + currentOutputFile);
+
+    sendEvent("recordingFinished", result);
+
 
   }
 
